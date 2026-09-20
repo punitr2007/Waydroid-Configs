@@ -30,10 +30,11 @@ show_menu() {
     echo "  5) Get Google Play Device ID (for Google Play Certification)"
     echo "  6) Install ARM Translation (libndk / libhoudini) & Magisk"
     echo "  7) Install an APK file"
-    echo "  8) Open Android Shell (waydroid shell)"
-    echo "  9) Exit"
+    echo "  8) Hide / Unhide Waydroid apps from Desktop Launcher"
+    echo "  9) Open Android Shell (waydroid shell)"
+    echo "  10) Exit"
     echo "=========================================================="
-    read -rp "Enter choice [1-9]: " CHOICE
+    read -rp "Enter choice [1-10]: " CHOICE
     echo ""
 }
 
@@ -46,11 +47,9 @@ fix_network() {
     echo "[*] Requesting sudo access to configure Firewall / NAT for waydroid0..."
     sudo -v || { echo "[!] Sudo authentication failed."; return 1; }
 
-    # Detect default outgoing network interface (e.g. wlan0 / eth0)
     DEFAULT_IFACE=$(ip route show default | awk '{print $5}' | head -n 1)
     echo "    Default internet interface detected: ${DEFAULT_IFACE:-any}"
 
-    # Configure UFW if active
     if command -v ufw &>/dev/null && sudo ufw status | grep -q "Status: active"; then
         echo "[*] UFW is active. Configuring UFW forwarding rules for waydroid0..."
         sudo ufw allow in on waydroid0
@@ -61,7 +60,6 @@ fix_network() {
         sudo ufw reload
     fi
 
-    # Standard iptables rules
     echo "[*] Applying standard iptables forwarding and NAT rules..."
     sudo iptables -C FORWARD -i waydroid0 -j ACCEPT 2>/dev/null || sudo iptables -A FORWARD -i waydroid0 -j ACCEPT
     sudo iptables -C FORWARD -o waydroid0 -j ACCEPT 2>/dev/null || sudo iptables -A FORWARD -o waydroid0 -j ACCEPT
@@ -130,6 +128,20 @@ install_apk() {
     fi
 }
 
+toggle_desktop_visibility() {
+    echo "Select an option:"
+    echo "  1) Hide all Waydroid apps from Application Menu"
+    echo "  2) Unhide / Show all Waydroid apps in Application Menu"
+    echo "  3) Check current visibility status"
+    read -rp "Choice [1-3]: " APP_VIS_CHOICE
+    case "$APP_VIS_CHOICE" in
+        1) "${SCRIPT_DIR}/hide_apps.sh" hide ;;
+        2) "${SCRIPT_DIR}/hide_apps.sh" unhide ;;
+        3) "${SCRIPT_DIR}/hide_apps.sh" status ;;
+        *) echo "Invalid choice." ;;
+    esac
+}
+
 while true; do
     show_menu
     case "${CHOICE}" in
@@ -159,9 +171,12 @@ while true; do
             install_apk
             ;;
         8)
-            sudo /usr/bin/python3 /usr/bin/waydroid shell
+            toggle_desktop_visibility
             ;;
         9)
+            sudo /usr/bin/python3 /usr/bin/waydroid shell
+            ;;
+        10)
             echo "Exiting."
             exit 0
             ;;
