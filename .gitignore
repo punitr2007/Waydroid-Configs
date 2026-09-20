@@ -1,0 +1,21 @@
+# Large Android OS Images (Do not commit gigabyte image files)
+images/
+downloads/
+*.img
+*.zip
+*.bin
+*.parts/
+*.part
+
+# Virtual Environments & Submodules
+.venv/
+waydroid_script/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs & Temp
+*.log
+.DS_Store
