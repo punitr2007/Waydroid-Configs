@@ -26,7 +26,7 @@ show_menu() {
     echo "  1) Launch Waydroid Full UI (waydroid show-full-ui)"
     echo "  2) Start Waydroid Session in background"
     echo "  3) Stop Waydroid Session & Container"
-    echo "  4) Fix Internet & DNS inside Waydroid (UFW / Firewall / DNS)"
+    echo "  4) Fix Internet, Network & NFTables Bug (waydroid-net.sh / UFW / DNS)"
     echo "  5) Get Google Play Device ID (for Google Play Certification)"
     echo "  6) Install ARM Translation (libndk / libhoudini) & Magisk"
     echo "  7) Install an APK file"
@@ -39,35 +39,7 @@ show_menu() {
 }
 
 fix_network() {
-    echo "[*] Setting Waydroid DNS to Google DNS (8.8.8.8 & 1.1.1.1)..."
-    run_waydroid prop set persist.waydroid.dns 8.8.8.8
-    run_waydroid prop set persist.waydroid.dns2 1.1.1.1
-    
-    echo ""
-    echo "[*] Requesting sudo access to configure Firewall / NAT for waydroid0..."
-    sudo -v || { echo "[!] Sudo authentication failed."; return 1; }
-
-    DEFAULT_IFACE=$(ip route show default | awk '{print $5}' | head -n 1)
-    echo "    Default internet interface detected: ${DEFAULT_IFACE:-any}"
-
-    if command -v ufw &>/dev/null && sudo ufw status | grep -q "Status: active"; then
-        echo "[*] UFW is active. Configuring UFW forwarding rules for waydroid0..."
-        sudo ufw allow in on waydroid0
-        sudo ufw route allow in on waydroid0
-        if [ -n "$DEFAULT_IFACE" ]; then
-            sudo ufw route allow in on waydroid0 out on "${DEFAULT_IFACE}"
-        fi
-        sudo ufw reload
-    fi
-
-    echo "[*] Applying standard iptables forwarding and NAT rules..."
-    sudo iptables -C FORWARD -i waydroid0 -j ACCEPT 2>/dev/null || sudo iptables -A FORWARD -i waydroid0 -j ACCEPT
-    sudo iptables -C FORWARD -o waydroid0 -j ACCEPT 2>/dev/null || sudo iptables -A FORWARD -o waydroid0 -j ACCEPT
-    sudo iptables -t nat -C POSTROUTING -s 192.168.240.0/24 ! -d 192.168.240.0/24 -j MASQUERADE 2>/dev/null || \
-        sudo iptables -t nat -A POSTROUTING -s 192.168.240.0/24 ! -d 192.168.240.0/24 -j MASQUERADE
-
-    echo ""
-    echo "  ✓ Network and firewall configurations applied successfully!"
+    "${SCRIPT_DIR}/fix_internet.sh"
 }
 
 get_play_id() {

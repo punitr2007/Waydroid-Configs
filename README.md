@@ -273,6 +273,14 @@ bindsym XF86AudioPlay exec --no-startup-id /path/to/Waydroid-Configs/waydroid_me
 > **Cause**: Rapid failed sudo attempts triggered Linux PAM security lockout.  
 > **Fix**: Wait **10 minutes** for `pam_faillock` to expire automatically, then run commands normally.
 
+#### Q: `RuntimeError: Command failed: % /usr/lib/waydroid/data/scripts/waydroid-net.sh start`
+> **Cause**: Upstream `waydroid-net.sh` attempts to load nftables rules on kernels or setups where nftables NAT is incompatible or disabled (`Error: Could not process rule: No such file or directory`).  
+> **Fix**: Run the included network fixer:
+> ```bash
+> ./fix_internet.sh
+> ```
+> This script automatically switches Waydroid's network backend to stable `iptables` (`LXC_USE_NFT="false"`), resets the bridge, configures UFW/iptables forwarding, and restarts the container.
+
 #### Q: Play Store shows "Device is not Play Protect certified"
 > **Fix**:
 > 1. Run `./waydroid_tools.sh` and select option **`5`** to get your GSF Android ID.
