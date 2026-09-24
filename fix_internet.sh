@@ -15,17 +15,30 @@ echo ""
 echo "[*] Requesting sudo permission to patch waydroid-net.sh and configure firewall..."
 sudo -v
 
-# 1. Patch waydroid-net.sh to disable broken nftables mode and use stable iptables
+# 1. Patch waydroid-net.sh to disable broken nftables mode and use modern iptables (iptables-nft)
 NET_SCRIPT="/usr/lib/waydroid/data/scripts/waydroid-net.sh"
 if [ -f "${NET_SCRIPT}" ]; then
-    echo "[*] Patching ${NET_SCRIPT} to use stable iptables (LXC_USE_NFT=\"false\")..."
+    echo "[*] Patching ${NET_SCRIPT} to use stable iptables mode..."
     sudo sed -i 's/LXC_USE_NFT="true"/LXC_USE_NFT="false"/g' "${NET_SCRIPT}"
+    
+    # Force use of standard iptables / iptables-nft rather than iptables-legacy
+    sudo sed -i 's/IPTABLES_BIN="\$(command -v iptables-legacy)"/IPTABLES_BIN="\$(command -v iptables)"/g' "${NET_SCRIPT}"
+    sudo sed -i 's/IP6TABLES_BIN="\$(command -v ip6tables-legacy)"/IP6TABLES_BIN="\$(command -v ip6tables)"/g' "${NET_SCRIPT}"
     
     # Also clean up any leading semicolon if present in start_nftables
     if grep -q 'NFT_RULESET="\${NFT_RULESET};' "${NET_SCRIPT}"; then
         sudo sed -i 's/NFT_RULESET="\${NFT_RULESET};/NFT_RULESET="\${NFT_RULESET}/g' "${NET_SCRIPT}"
     fi
-    echo "    ✓ ${NET_SCRIPT} configured to use iptables."
+    echo "    ✓ ${NET_SCRIPT} configured."
+fi
+
+# 2. Check for kernel update mismatch (running kernel vs /lib/modules)
+RUNNING_KERNEL="$(uname -r)"
+if [ ! -d "/lib/modules/${RUNNING_KERNEL}" ]; then
+    echo ""
+    echo "[!] Notice: Running kernel (${RUNNING_KERNEL}) does not match installed /lib/modules."
+    echo "    A system update (pacman -Syu) recently updated your kernel."
+    echo "    A reboot is recommended to boot into the latest kernel."
 fi
 
 # 2. Enable IPv4 forwarding in kernel
